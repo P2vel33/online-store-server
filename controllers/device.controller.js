@@ -1,7 +1,8 @@
 const uuid = require("uuid");
 const path = require("path");
-const { Device } = require("../models/models");
+const { Device, DeviceInfo } = require("../models/models");
 const ApiError = require("../error/ApiError");
+const { title } = require("process");
 
 class DeviceController {
   async create(req, res) {
@@ -10,6 +11,17 @@ class DeviceController {
       const { img } = req.files;
       let fileName = uuid.v4() + ".jpg";
       img.mv(path.resolve(__dirname, "..", "static", fileName));
+
+      if (info) {
+        info = JSON.parse(info);
+        info.forEach((i) => {
+          DeviceInfo.create({
+            title: i.title,
+            description: i.description,
+            deviceId: device.id,
+          });
+        });
+      }
 
       const device = await Device.create({
         name,
@@ -34,20 +46,39 @@ class DeviceController {
         devices = await Device.findAndCountAll({ limit, offset });
       }
       if (brandId && !typeId) {
-        devices = await Device.findAndCountAll({ where: { brandId } });
+        devices = await Device.findAndCountAll({
+          where: { brandId },
+          limit,
+          offset,
+        });
       }
       if (!brandId && typeId) {
-        devices = await Device.findAndCountAll({ where: { typeId } });
+        devices = await Device.findAndCountAll({
+          where: { typeId },
+          limit,
+          offset,
+        });
       }
       if (brandId && typeId) {
-        devices = await Device.findAndCountAll({ where: { typeId, brandId } });
+        devices = await Device.findAndCountAll({
+          where: { typeId, brandId },
+          limit,
+          offset,
+        });
       }
       return res.json(devices);
     } catch (error) {
       return next(ApiError.badRequest(e.message));
     }
   }
-  async getOne(req, res) {}
+  async getOne(req, res) {
+    const { id } = req.params;
+    const device = await Device.findOne({
+      where: { id },
+      include: [{ model: DeviceInfo, as: "info" }],
+    });
+    return res.json(device);
+  }
 }
 
 module.exports = new DeviceController();

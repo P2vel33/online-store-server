@@ -5,12 +5,20 @@ const ApiError = require("../error/ApiError");
 const { title } = require("process");
 
 class DeviceController {
-  async create(req, res) {
+  async create(req, res, next) {
     try {
       const { name, price, brandId, typeId, info } = req.body;
       const { img } = req.files;
       let fileName = uuid.v4() + ".jpg";
       img.mv(path.resolve(__dirname, "..", "static", fileName));
+
+      const device = await Device.create({
+        name,
+        price,
+        brandId,
+        typeId,
+        img: fileName,
+      });
 
       if (info) {
         info = JSON.parse(info);
@@ -22,22 +30,14 @@ class DeviceController {
           });
         });
       }
-
-      const device = await Device.create({
-        name,
-        price,
-        brandId,
-        typeId,
-        img: fileName,
-      });
       return res.json(device);
     } catch (error) {
       return next(ApiError.badRequest(e.message));
     }
   }
-  async getAll(req, res) {
+  async getAll(req, res, next) {
     try {
-      const { brandId, typeId, limit, page } = req.query;
+      let { brandId, typeId, limit, page } = req.query;
       page = page || 1;
       limit = limit || 9;
       let offset = page * limit - limit;
@@ -68,7 +68,7 @@ class DeviceController {
       }
       return res.json(devices);
     } catch (error) {
-      return next(ApiError.badRequest(e.message));
+      return next(ApiError.badRequest(error.message));
     }
   }
   async getOne(req, res) {

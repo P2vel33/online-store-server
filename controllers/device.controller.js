@@ -7,8 +7,8 @@ const { title } = require("process");
 class DeviceController {
   async create(req, res, next) {
     try {
-      const { name, price, brandId, typeId, info } = req.body;
-      const { img } = req.files;
+      let { name, price, brandId, typeId, info } = req.body;
+      let { img } = req.files;
       let fileName = uuid.v4() + ".jpg";
       img.mv(path.resolve(__dirname, "..", "static", fileName));
 
@@ -32,6 +32,7 @@ class DeviceController {
       }
       return res.json(device);
     } catch (error) {
+      console.error(error);
       return next(ApiError.badRequest(e.message));
     }
   }
